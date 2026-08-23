@@ -52,9 +52,20 @@ int main() {
     assert(new_handle == 6);
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     std::cout << "Test Passed!" << std::endl << std::endl;;
-    
-    // Give threads time to process the message before destroying manager
+
+    manager.unsubscribe("/abc", new_handle);
+
+    // test multiple topics
+    std::cout << "--- Test: Test multiple topics ---" << std::endl;
+    int topic2 = manager.subscribe("/def", [](unsigned char* msg) {
+            std::lock_guard<std::mutex> lock(logLock);
+            std::cout << "[1] Topic2: " << msg << std::endl;
+    });
+    assert(topic2 == 1);
+    manager.publish("/def", (unsigned char*) "Message from second topic!");
+    manager.publish("/abc", (unsigned char*) "Message from first topic!");
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    std::cout << "Test Passed!" << std::endl << std::endl;;
     
     std::cout << "Test complete" << std::endl;
 }
