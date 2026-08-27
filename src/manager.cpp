@@ -34,6 +34,10 @@ void disconnect(int fd) {
             if (topicToSubscribers[topic].size() == 0) {
                 topicToSubscribers.erase(topic);
             }
+            topicToPublishers[topic].erase(fd);
+            if (topicToPublishers[topic].size() == 0) {
+                topicToPublishers.erase(topic);
+            }
         }
 
         clientToSubscribedTopic.erase(fd);

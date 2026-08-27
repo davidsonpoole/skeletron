@@ -19,7 +19,7 @@ struct Subscriber {
     std::function<void(unsigned char*)> fn;
 };
 
-#define NUM_THREADS 5
+#define NUM_THREADS 5000
 
 class Manager {
 public:
