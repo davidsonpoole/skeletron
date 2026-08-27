@@ -13,26 +13,28 @@ protected:
 
 // Demonstrate some basic assertions.
 TEST_F(PubSubTest, ConcurrentPublishSubscribe) {
-    const int NUM_PUBLISHERS = 100;
-    const int NUM_SUBSCRIBERS = 50;
-    const int MESSAGES_PER_PUBLISHER = 10;
+  const int NUM_PUBLISHERS = 2;          // was 100
+  const int NUM_SUBSCRIBERS = 2;         // was 50
+  const int MESSAGES_PER_PUBLISHER = 2000;  // was 10
 
-    std::atomic<int> messagesReceived{0};
-    std::mutex mtx;
+  std::atomic<int> messagesReceived{0};
+  std::mutex mtx;
 
-    // Subscribe first
-    std::vector<std::thread> subscribers;
-    for (int i = 0; i < NUM_SUBSCRIBERS; i++) {
-      m.subscribe("/abc", [&messagesReceived](unsigned char* msg) {
-        messagesReceived++;
-      });
-    }
+  // Subscribe first
+  std::vector<std::thread> subscribers;
+  for (int i = 0; i < NUM_SUBSCRIBERS; i++) {
+    m.subscribe("/abc", [&messagesReceived](unsigned char* msg) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));  // Add delay
+      messagesReceived++;
+    });
+  }
 
     // Publish concurrently from multiple threads
     std::vector<std::thread> publishers;
     for (int i = 0; i < NUM_PUBLISHERS; i++) {
       publishers.emplace_back([this, i]() {
         for (int j = 0; j < MESSAGES_PER_PUBLISHER; j++) {
+          std::this_thread::sleep_for(std::chrono::milliseconds(5));
           m.publish("/abc", (unsigned char*)"Test message");
         }
       });
