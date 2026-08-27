@@ -17,3 +17,7 @@ add_executable(pubsub_test_concurrency test/pubsub_test_concurrency.cpp)
 target_link_libraries(pubsub_test_concurrency PRIVATE GTest::gtest GTest::gtest_main Threads::Threads)
 gtest_discover_tests(pubsub_test_concurrency)
 
+add_executable(pubsub_test_timing test/pubsub_test_timing.cpp)
+target_link_libraries(pubsub_test_timing PRIVATE GTest::gtest GTest::gtest_main Threads::Threads)
+gtest_discover_tests(pubsub_test_timing)
+
