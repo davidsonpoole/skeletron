@@ -20,7 +20,6 @@ struct TestMessage {
     uint8_t padding[48];  // pad to fixed 64 bytes, or your target payload size
 };
 
-
 // nanos since epoch
 uint64_t read_timestamp() {
     return std::chrono::duration_cast<std::chrono::nanoseconds>(
@@ -31,7 +30,7 @@ uint64_t read_timestamp() {
 // Demonstrate some basic assertions.
 TEST_F(PubSubTest, PublishSubscribeTiming_Baseline) {
 
-    const int warmupCount = 1000;
+    const int warmupCount = 100000;
     const int measuredCount = 1000000;
     const int totalCount = warmupCount + measuredCount;
 

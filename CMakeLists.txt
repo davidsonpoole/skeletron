@@ -9,6 +9,15 @@ find_package(GTest CONFIG REQUIRED)
 enable_testing()
 include(GoogleTest)
 
+add_executable(manager src/manager.cpp)
+target_link_libraries(manager PRIVATE Threads::Threads)
+
+add_executable(publisher src/publisher.cpp)
+target_link_libraries(publisher PRIVATE Threads::Threads)
+
+add_executable(subscriber src/subscriber.cpp)
+target_link_libraries(subscriber PRIVATE Threads::Threads)
+
 add_executable(pubsub_test test/pubsub_test.cpp)
 target_link_libraries(pubsub_test PRIVATE Threads::Threads)
 add_test(NAME pubsub_test COMMAND pubsub_test)

@@ -4,7 +4,7 @@
 #include <iostream>
 #include "messaging.h"
 
-/* This application is responsible for publishing data. 
+/* This application is responsible for subscribing to data. 
 It will connect to the manager node
 */
 

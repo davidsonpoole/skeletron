@@ -19,12 +19,17 @@ struct Subscriber {
     std::function<void(unsigned char*)> fn;
 };
 
-#define NUM_THREADS 500
-
 class Manager {
 public:
-    Manager() {
+    Manager(size_t num_threads = std::thread::hardware_concurrency() * 2) 
+    : NUM_THREADS(num_threads) {
+        workQueue.resize(NUM_THREADS);
+        workQueueLock.reserve(NUM_THREADS);
+        workQueueCV.reserve(NUM_THREADS);
+
         for (int i=0; i<NUM_THREADS; i++) {
+            workQueueLock.push_back(std::make_unique<std::mutex>());
+            workQueueCV.push_back(std::make_unique<std::condition_variable>());
             freeList.push(i);
         }
     }
@@ -33,7 +38,7 @@ public:
         // Signal all threads to stop
         shutdown = true;
         for (int i=0; i<NUM_THREADS; i++) {
-            workQueueCV[i].notify_all();
+            (*workQueueCV[i]).notify_all();
         }
         // Wait for all threads to finish
         for (auto& t : threads) {
@@ -64,9 +69,9 @@ public:
 
         for (auto& s : v) {
             int thread_id = s->thread_id;
-            std::lock_guard<std::mutex> lock(workQueueLock[thread_id]);
+            std::lock_guard<std::mutex> lock(*workQueueLock[thread_id]);
             workQueue[thread_id].push({s->fn, msg});
-            workQueueCV[thread_id].notify_all();
+            (*workQueueCV[thread_id]).notify_all();
         }
     }
 
@@ -120,7 +125,7 @@ public:
             v.erase(it);
 
             // clear work queue
-            std::lock_guard<std::mutex> lockI(workQueueLock[thread_id]);
+            std::lock_guard<std::mutex> lockI(*workQueueLock[thread_id]);
 
             while (!workQueue[thread_id].empty()) {
                 workQueue[thread_id].pop();
@@ -148,9 +153,10 @@ private:
     // Shutdown flag
     std::atomic<bool> shutdown{false};
 
-    std::array<std::queue<std::pair<std::function<void(unsigned char*)>, unsigned char*>>, NUM_THREADS> workQueue;
-    std::array<std::mutex, NUM_THREADS> workQueueLock;
-    std::array<std::condition_variable, NUM_THREADS> workQueueCV;
+    const size_t NUM_THREADS;
+    std::vector<std::queue<std::pair<std::function<void(unsigned char*)>, unsigned char*>>> workQueue;
+    std::vector<std::unique_ptr<std::mutex>> workQueueLock;
+    std::vector<std::unique_ptr<std::condition_variable>> workQueueCV;
 
     void thread_fn(int id) {
         
@@ -162,9 +168,9 @@ private:
         }
 
         while (!shutdown) {
-            std::unique_lock<std::mutex> lock(workQueueLock[id]);
+            std::unique_lock<std::mutex> lock(*workQueueLock[id]);
 
-            workQueueCV[id].wait(lock, [this, id]() {return !workQueue[id].empty() || shutdown;});
+            (*workQueueCV[id]).wait(lock, [this, id]() {return !workQueue[id].empty() || shutdown;});
             
             if (shutdown) break;
 

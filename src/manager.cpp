@@ -1,6 +1,7 @@
 #include <mutex>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <netinet/in.h>
 #include <unistd.h>
 #include <thread>
 #include <vector>
@@ -160,9 +161,23 @@ void handle_client(int client_fd) {
     disconnect(client_fd);
 }
 
+void run_accept_loop(int fd) {
+
+    while (running) {
+        int client_fd = accept(fd, nullptr, nullptr);
+        if (client_fd == -1) {
+            std::cerr << "Error on accept" << std::endl; 
+            continue; // don't crash the whole server on one bad accept
+        }
+
+        std::cout << "New client connected (fd=" << client_fd << ")" << std::endl;
+        std::thread(handle_client, client_fd).detach();
+    }
+}
+
 int main() {
-    int server_fd = socket(AF_UNIX, SOCK_STREAM, 0);
-    if (server_fd == -1) { 
+    int unix_fd = socket(AF_UNIX, SOCK_STREAM, 0);
+    if (unix_fd == -1) { 
         std::cerr << "Socket error" << std::endl; 
         return 1; 
     }
@@ -173,35 +188,53 @@ int main() {
 
     unlink(SOCKET_PATH);
 
-    if (bind(server_fd, (sockaddr*)&addr, sizeof(addr)) == -1) {
+    if (bind(unix_fd, (sockaddr*)&addr, sizeof(addr)) == -1) {
         std::cerr << "Error on bind" << std::endl; 
-        close(server_fd);
+        close(unix_fd);
         return 1;
     }
 
-    if (listen(server_fd, /*backlog=*/16) == -1) {
+    if (listen(unix_fd, /*backlog=*/16) == -1) {
         std::cerr << "Error on listen" << std::endl; 
-        close(server_fd);
+        close(unix_fd);
         return 1;
     }
 
     std::cout << "Listening on " << SOCKET_PATH << std::endl;
 
-    std::vector<std::thread> threads;
-
-    while (running) {
-        int client_fd = accept(server_fd, nullptr, nullptr);
-        if (client_fd == -1) {
-            std::cerr << "Error on accept" << std::endl; 
-            continue; // don't crash the whole server on one bad accept
-        }
-
-        std::cout << "New client connected (fd=" << client_fd << ")" << std::endl;
-        threads.emplace_back(handle_client, client_fd);
-        threads.back().detach(); // let it clean itself up when done
+    int inet_fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (inet_fd == -1) { 
+        std::cerr << "Socket error" << std::endl; 
+        return 1; 
     }
 
-    close(server_fd);
+    sockaddr_in inetAddr{};
+    inetAddr.sin_family = AF_INET;
+    inetAddr.sin_port = htons(7001);
+    inetAddr.sin_addr.s_addr = INADDR_ANY;
+
+    if (bind(inet_fd, (sockaddr*)&inetAddr, sizeof(inetAddr)) == -1) {
+        std::cerr << "Error on bind" << std::endl; 
+        close(inet_fd);
+        return 1;
+    }
+
+    if (listen(inet_fd, /*backlog=*/16) == -1) {
+        std::cerr << "Error on listen" << std::endl; 
+        close(inet_fd);
+        return 1;
+    }
+
+    std::cout << "Listening on " << ntohs(inetAddr.sin_port) << std::endl;
+
+    std::thread unix_thread(run_accept_loop, unix_fd);
+    std::thread inet_thread(run_accept_loop, inet_fd);
+
+    unix_thread.join();
+    inet_thread.join();
+
+    close(unix_fd);
+    close(inet_fd);
     unlink(SOCKET_PATH);
     return 0;
 }
