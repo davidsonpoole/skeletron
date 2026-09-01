@@ -1,2 +1,4 @@
 build
 compile_commands.json
+esp32-publisher/.pio
+esp32-publisher/src/wifi_secrets.h
