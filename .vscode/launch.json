@@ -1,0 +1,14 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug GTest",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/pubsub_test_concurrency",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "cmake-build"
+        }
+    ]
+}

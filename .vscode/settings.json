@@ -1,0 +1,12 @@
+{
+    "cmake.useCMakePresets": "always",
+    "cmake.configureOnOpen": true,
+    "C_Cpp.default.compileCommands": "${workspaceFolder}/build/compile_commands.json",
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
+    "[cpp]": {
+        "editor.formatOnSave": false,
+        "editor.tabSize": 4,
+    }
+}
